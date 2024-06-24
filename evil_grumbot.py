@@ -1,6 +1,7 @@
 import os
 from typing import Any, Callable, Literal
 import logging
+import socket
 
 import discord
 from discord import app_commands, utils
