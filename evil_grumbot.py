@@ -32,23 +32,12 @@ class MyBot(discord.Client):
         logging.info("Ready!")
 
 
-def resolve_member(interaction: discord.Interaction,
-                   user: discord.User) -> discord.User:
-    if user is None and interaction is not None:
-        return interaction.user
-    data = pd.read_csv("gwaff.csv", index_col=0)
-    if int(user.id) in data['ID'].unique():
-        return user
-    else:
-        return False
-
-
 bot = MyBot()
 tree = app_commands.CommandTree(bot)
 
-survival_channels = [930585547842404372, 930322945040072734]
-modded_channels = [1241016401502928967, 1237006920863453225]
-creative_channels = []
+survival_channels: list[int] = [930585547842404372, 930322945040072734]
+modded_channels: list[int] = [1241016401502928967, 1237006920863453225]
+creative_channels: list[int] = []
 
 server_type = Literal["None", "Survival", "Modded", "Creative"]
 
@@ -59,8 +48,8 @@ ips: dict[server_type, str] = {
 }
 
 @tree.command(name="list",
-              description="Lists the active members of a spooncraft server")
-@app_commands.describe(server='The server to check. Not required in certain channels.')
+              description="Lists the active members of a spooncraft server.")
+@app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
 @app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
                     server: server_type = "None"):
@@ -74,14 +63,17 @@ async def send_data(interaction: discord.Interaction,
             server = "Creative"
         else:
             await interaction.followup.send("**You must either select a server "
-                                            "or be in a recognised channel**",
-                                            ephemeral=True)
+                                            "or be in a recognised channel**")
             return
     server_lookup = JavaServer.lookup(ips.get(server))
     try:
         status = server_lookup.status()
     except TimeOutError:
+        # For some reason it times out when getting the status of an empty server
         await interaction.followup.send(f"**No players online**")
+        return
+    except Exception as e:
+        await interaction.followup.send(f"**An unexpected error occurred**")
         return
     count = status.players.online
     if count == 0:
