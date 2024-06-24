@@ -75,7 +75,7 @@ async def send_data(interaction: discord.Interaction,
         try:
             status = server_lookup.status()
             break
-        except TimeoutError:
+        except socket.timeout:
             logging.warn(f"Status TimeoutError {count}")
             count += 1
         except Exception as e:
@@ -100,7 +100,7 @@ async def send_data(interaction: discord.Interaction,
         players = query.players.names
         player_list = ', '.join(players)
         await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
-    except TimeoutError:
+    except socket.timeout:
         # Use backup info
         logging.warning('Using backup')
         players = status.players.sample
