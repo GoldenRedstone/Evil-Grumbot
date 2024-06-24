@@ -47,6 +47,7 @@ ips: dict[server_type, str] = {
     "Creative": "173.233.142.2:25565"
 }
 
+
 @tree.command(name="list",
               description="Lists the active members of a spooncraft server.")
 @app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
@@ -66,25 +67,49 @@ async def send_data(interaction: discord.Interaction,
                                             "or be in a recognised channel**")
             return
     server_lookup = JavaServer.lookup(ips.get(server))
-    try:
-        status = server_lookup.status()
-    except TimeOutError:
-        # For some reason it times out when getting the status of an empty server
-        await interaction.followup.send(f"**No players online**")
-        return
-    except Exception as e:
+
+    # Attempt to get the server information.
+    status: JavaServer.JavaStatusResponse = None
+    count = 0
+    while count < 5:
+        try:
+            status = server_lookup.status()
+            break
+        except TimeoutError:
+            logging.warn(f"Status TimeoutError {count}")
+            count += 1
+        except Exception as e:
+            logging.warn(f"Status Unknown exception {e} {count}")
+            count += 1
+    # Attempt an error had occured.
+    if status is None:
         await interaction.followup.send(f"**An unexpected error occurred**")
         return
-    count = status.players.online
-    if count == 0:
-        await interaction.followup.send(f"**No players online**")
+
+    player_count = status.players.online
+    if player_count == 0:
+        await interaction.followup.send(f"**No online players**")
         return
+
     max_count = status.players.max
-    # query = server_lookup.query()
-    # players = query.players.names
-    players = status.players.sample
-    player_list = ', '.join([i.name for i in players])
-    await interaction.followup.send(f"**Online players ({count}/{max_count}):**\n```{player_list}```")
+
+    # Attempt to get the player list
+    try:
+        # Try through query
+        query = server_lookup.query()
+        players = query.players.names
+        player_list = ', '.join(players)
+        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+    except TimeoutError:
+        # Use backup info
+        logging.warning('Using backup')
+        players = status.players.sample
+        player_list = ', '.join(
+            [i.name for i in players if i.name != "Anonymous Player"])
+        # Sample has a possibility of missing players.
+        if len(players) > player_count:
+            player_list += ', ...'
+        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
 
 
 def runTheBot(token) -> None:
