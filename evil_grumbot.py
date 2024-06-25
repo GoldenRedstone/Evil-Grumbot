@@ -8,6 +8,9 @@ from discord import app_commands, utils
 
 from mcstatus import JavaServer
 
+class ServerDoesNotSupportQuerying(Exception):
+    pass
+
 
 class MyBot(discord.Client):
     def __init__(self, *args: Any, **kwargs: Any):
@@ -96,12 +99,14 @@ async def send_data(interaction: discord.Interaction,
 
     # Attempt to get the player list
     try:
-        # Try through query
-        query = server_lookup.query()
-        players = query.players.names
-        player_list = ', '.join(players)
-        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
-    except socket.timeout:
+        # Try through query if server supports it
+        if not server == "Modded":
+            query = server_lookup.query()
+            players = query.players.names
+            player_list = ', '.join(players)
+            await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        else: raise ServerDoesNotSupportQuerying()
+    except (socket.timeout, ServerDoesNotSupportQuerying):
         # Use backup info
         logging.warning('Using backup')
         players = status.players.sample
