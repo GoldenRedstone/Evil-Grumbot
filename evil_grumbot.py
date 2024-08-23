@@ -8,6 +8,7 @@ from discord import app_commands, utils
 
 from mcstatus import JavaServer
 
+
 class ServerDoesNotSupportQuerying(Exception):
     pass
 
@@ -40,15 +41,16 @@ bot = MyBot()
 tree = app_commands.CommandTree(bot)
 
 survival_channels: list[int] = [930585547842404372, 930322945040072734]
-modded_channels: list[int] = [1241016401502928967, 1237006920863453225]
+events_channels: list[int] = [1241016401502928967, 1237006920863453225, 1167958292245512213, 1276552236323045437]
 creative_channels: list[int] = []
 
-server_type = Literal["None", "Survival", "Modded", "Creative"]
+server_type = Literal["Default", "Survival", "Events", "Creative", "Minigames"]
 
 ips: dict[server_type, str] = {
     "Survival": "173.233.142.94:25565",
-    "Modded": "173.233.142.10:25565",
+    "Events": "173.233.142.10:25565",
     "Creative": "173.233.142.2:25565"
+    "Minigames": "173.233.142.3:25565"
 }
 
 
@@ -57,13 +59,13 @@ ips: dict[server_type, str] = {
 @app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
 @app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
-                    server: server_type = "None"):
+                    server: server_type = "Default"):
     await interaction.response.defer(ephemeral=True)
-    if server == "None":
+    if server == "Default":
         if interaction.channel_id in survival_channels:
             server = "Survival"
-        elif interaction.channel_id in modded_channels:
-            server = "Modded"
+        elif interaction.channel_id in events_channels:
+            server = "Events"
         elif interaction.channel_id in creative_channels:
             server = "Creative"
         else:
@@ -100,12 +102,15 @@ async def send_data(interaction: discord.Interaction,
     # Attempt to get the player list
     try:
         # Try through query if server supports it
-        if not server == "Modded":
-            query = server_lookup.query()
-            players = query.players.names
-            player_list = ', '.join(players)
-            await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
-        else: raise ServerDoesNotSupportQuerying()
+        if server in ("Events", "Minigames"):
+            raise ServerDoesNotSupportQuerying(
+                f"{server} Server does not support queying method."
+            )
+        query = server_lookup.query()
+        players = query.players.names
+        player_list = ', '.join(players)
+        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        return
     except (socket.timeout, ServerDoesNotSupportQuerying):
         # Use backup info
         logging.warning('Using backup')
@@ -116,6 +121,7 @@ async def send_data(interaction: discord.Interaction,
         if len(players) > player_count:
             player_list += ', ...'
         await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        return
 
 
 def runTheBot(token) -> None:
