@@ -62,7 +62,6 @@ ips: dict[server_type, str] = {
 async def send_data(interaction: discord.Interaction,
                     server: server_type = "Default"):
     await interaction.response.defer(ephemeral=True)
-    header = ""
     if server == "Default":
         if interaction.channel_id in survival_channels:
             server = "Survival"
@@ -70,13 +69,13 @@ async def send_data(interaction: discord.Interaction,
             server = "Events"
         elif interaction.channel_id in creative_channels:
             server = "Creative"
-        elif interaction.channel_id in minigame_channels:
+        elif interaction.channel_id in minigames_channels:
             server = "Minigames"
         else:
             await interaction.followup.send("**You must either select a server "
                                             "or be in a recognised channel**")
             return
-        header = f"**{server}**\n"
+    server_name = f"**Spooncraft {server} Server**\n"
     server_lookup = JavaServer.lookup(ips.get(server))
 
     # Attempt to get the server information.
@@ -99,7 +98,7 @@ async def send_data(interaction: discord.Interaction,
 
     player_count = status.players.online
     if player_count == 0:
-        await interaction.followup.send(f"{header}**No online players**")
+        await interaction.followup.send(f"{server_name}**No online players**")
         return
 
     max_count = status.players.max
@@ -114,7 +113,7 @@ async def send_data(interaction: discord.Interaction,
         query = server_lookup.query()
         players = query.players.names
         player_list = ', '.join(players)
-        await interaction.followup.send(f"{header}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        await interaction.followup.send(f"{server_name}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
     except (socket.timeout, ServerDoesNotSupportQuerying):
         # Use backup info
@@ -125,7 +124,7 @@ async def send_data(interaction: discord.Interaction,
         # Sample has a possibility of missing players.
         if len(players) > player_count:
             player_list += ', ...'
-        await interaction.followup.send(f"{header}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        await interaction.followup.send(f"{server_name}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
 
 
