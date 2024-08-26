@@ -58,7 +58,7 @@ ips: dict[server_type, str] = {
 @tree.command(name="list",
               description="Lists the active members of a spooncraft server.")
 @app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
-# @app_commands.allowed_installs(guilds=True, users=True)
+@app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
                     server: server_type = "Default"):
     await interaction.response.defer(ephemeral=True)
