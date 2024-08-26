@@ -43,13 +43,14 @@ tree = app_commands.CommandTree(bot)
 survival_channels: list[int] = [930585547842404372, 930322945040072734]
 events_channels: list[int] = [1241016401502928967, 1237006920863453225, 1167958292245512213, 1276552236323045437]
 creative_channels: list[int] = []
+minigames_channels: list[int] = [646113723550924849]
 
-server_type = Literal["Default", "Survival", "Events", "Creative", "Minigames"]
+server_type = Literal["Default", "Survival", "Events", "Creative"]
 
 ips: dict[server_type, str] = {
     "Survival": "173.233.142.94:25565",
     "Events": "173.233.142.10:25565",
-    "Creative": "173.233.142.2:25565"
+    "Creative": "173.233.142.2:25565",
     "Minigames": "173.233.142.3:25565"
 }
 
@@ -57,10 +58,11 @@ ips: dict[server_type, str] = {
 @tree.command(name="list",
               description="Lists the active members of a spooncraft server.")
 @app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
-@app_commands.allowed_installs(guilds=True, users=True)
+# @app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
                     server: server_type = "Default"):
     await interaction.response.defer(ephemeral=True)
+    header = ""
     if server == "Default":
         if interaction.channel_id in survival_channels:
             server = "Survival"
@@ -68,10 +70,13 @@ async def send_data(interaction: discord.Interaction,
             server = "Events"
         elif interaction.channel_id in creative_channels:
             server = "Creative"
+        elif interaction.channel_id in minigame_channels:
+            server = "Minigames"
         else:
             await interaction.followup.send("**You must either select a server "
                                             "or be in a recognised channel**")
             return
+        header = f"**{server}**\n"
     server_lookup = JavaServer.lookup(ips.get(server))
 
     # Attempt to get the server information.
@@ -94,7 +99,7 @@ async def send_data(interaction: discord.Interaction,
 
     player_count = status.players.online
     if player_count == 0:
-        await interaction.followup.send(f"**No online players**")
+        await interaction.followup.send(f"{header}**No online players**")
         return
 
     max_count = status.players.max
@@ -109,7 +114,7 @@ async def send_data(interaction: discord.Interaction,
         query = server_lookup.query()
         players = query.players.names
         player_list = ', '.join(players)
-        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        await interaction.followup.send(f"{header}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
     except (socket.timeout, ServerDoesNotSupportQuerying):
         # Use backup info
@@ -120,7 +125,7 @@ async def send_data(interaction: discord.Interaction,
         # Sample has a possibility of missing players.
         if len(players) > player_count:
             player_list += ', ...'
-        await interaction.followup.send(f"**Online players ({player_count}/{max_count}):**\n```{player_list}```")
+        await interaction.followup.send(f"{header}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
 
 
