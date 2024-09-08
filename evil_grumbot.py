@@ -57,11 +57,12 @@ ips: dict[server_type, str] = {
 
 @tree.command(name="list",
               description="Lists the active members of a spooncraft server.")
-@app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
+@app_commands.describe(server='The Minecraft server to check. Not required in certain channels.',
+                        hidden='Hide from others in this server (Default True). May depend on the server.')
 @app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
                     server: server_type = "Default",
-                    hidden: bool = False):
+                    hidden: bool = True):
     await interaction.response.defer(ephemeral=hidden)
     if server == "Default":
         if interaction.channel_id in survival_channels:
@@ -70,7 +71,7 @@ async def send_data(interaction: discord.Interaction,
             server = "Events"
         elif interaction.channel_id in creative_channels:
             server = "Creative"
-        elif interaction.channel_id in Testing_channels:
+        elif interaction.channel_id in testing_channels:
             server = "Testing"
         else:
             await interaction.followup.send("**You must either select a server "
