@@ -43,7 +43,7 @@ tree = app_commands.CommandTree(bot)
 survival_channels: list[int] = [930585547842404372, 930322945040072734]
 events_channels: list[int] = [1241016401502928967, 1237006920863453225, 1167958292245512213, 1276552236323045437]
 creative_channels: list[int] = []
-minigames_channels: list[int] = [646113723550924849]
+testing_channels: list[int] = [646113723550924849]
 
 server_type = Literal["Default", "Survival", "Events", "Creative"]
 
@@ -51,7 +51,7 @@ ips: dict[server_type, str] = {
     "Survival": "173.233.142.94:25565",
     "Events": "173.233.142.10:25565",
     "Creative": "173.233.142.2:25565",
-    "Minigames": "173.233.142.3:25565"
+    "Testing": "173.233.142.3:25565"
 }
 
 
@@ -70,8 +70,8 @@ async def send_data(interaction: discord.Interaction,
             server = "Events"
         elif interaction.channel_id in creative_channels:
             server = "Creative"
-        elif interaction.channel_id in minigames_channels:
-            server = "Minigames"
+        elif interaction.channel_id in Testing_channels:
+            server = "Testing"
         else:
             await interaction.followup.send("**You must either select a server "
                                             "or be in a recognised channel**")
@@ -107,7 +107,7 @@ async def send_data(interaction: discord.Interaction,
     # Attempt to get the player list
     try:
         # Try through query if server supports it
-        if server in ("Events", "Minigames"):
+        if server in ("Events", "Testing"):
             raise ServerDoesNotSupportQuerying(
                 f"{server} Server does not support queying method."
             )
@@ -123,7 +123,9 @@ async def send_data(interaction: discord.Interaction,
         player_list = ', '.join(
             [i.name for i in players if i.name != "Anonymous Player"])
         # Sample has a possibility of missing players.
-        if len(players) > player_count:
+        if len(player_list) == 0 and player_count >= 1:
+            player_list += 'Anonymous Player'
+        elif len(players) < player_count:
             player_list += ', ...'
         await interaction.followup.send(f"{server_name}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
