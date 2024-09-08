@@ -60,8 +60,9 @@ ips: dict[server_type, str] = {
 @app_commands.describe(server='The Minecraft server to check. Not required in certain channels.')
 @app_commands.allowed_installs(guilds=True, users=True)
 async def send_data(interaction: discord.Interaction,
-                    server: server_type = "Default"):
-    await interaction.response.defer(ephemeral=True)
+                    server: server_type = "Default",
+                    hidden: bool = False):
+    await interaction.response.defer(ephemeral=hidden)
     if server == "Default":
         if interaction.channel_id in survival_channels:
             server = "Survival"
