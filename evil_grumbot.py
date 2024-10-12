@@ -8,6 +8,9 @@ from discord import app_commands, utils
 
 from mcstatus import JavaServer
 
+from custom_logger import Logger, BasicFormatter
+logger = Logger('evil.grumbot')
+
 
 class ServerDoesNotSupportQuerying(Exception):
     pass
@@ -25,7 +28,6 @@ class MyBot(discord.Client):
                          **kwargs)
 
         self.synced = False
-        self.servers = []
 
     async def on_ready(self) -> None:
         if not self.synced:
@@ -35,6 +37,11 @@ class MyBot(discord.Client):
                 logging.info("- " + server.name)
             self.synced = True
         logging.info("Ready!")
+
+    async def on_app_command_completion(self, interaction, command):
+        logger.info(f"User '{interaction.user.name}' "
+                    f"used command '{command.name}' "
+                    f"in guild '{interaction.guild.name}'")
 
 
 bot = MyBot()
@@ -117,9 +124,11 @@ async def send_data(interaction: discord.Interaction,
         player_list = ', '.join(players)
         await interaction.followup.send(f"{server_name}**Online players ({player_count}/{max_count}):**\n```{player_list}```")
         return
-    except (socket.timeout, ServerDoesNotSupportQuerying):
-        # Use backup info
-        logging.warning('Using backup')
+    except (socket.timeout, ServerDoesNotSupportQuerying) as e:
+        if e is socket.timeout:
+            logging.error(f'Using backup for {server}, despite being supported.')
+        else:
+            logging.warning('Using backup')
         players = status.players.sample
         player_list = ', '.join(
             [i.name for i in players if i.name != "Anonymous Player"])
